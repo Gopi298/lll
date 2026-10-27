@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Smart Light</title>
+<style>
+*{box-sizing:border-box;font-family:Segoe UI,Arial,sans-serif}
+body{margin:0;min-height:100vh;background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);color:#fff;
+display:flex;flex-direction:column;align-items:center;padding:20px;transition:background .4s}
+body.on{background:linear-gradient(135deg,#3a1c00,#7a3300,#b34700)}
+.hide{display:none!important}
+
+/* login */
+#loginView{width:100%;min-height:90vh;display:flex;align-items:center;justify-content:center}
+.card{background:rgba(255,255,255,.08);backdrop-filter:blur(10px);padding:36px 30px;border-radius:20px;
+width:100%;max-width:340px;color:#fff;box-shadow:0 10px 40px rgba(0,0,0,.5);text-align:center}
+.card h2{margin:10px 0 24px}
+.card input{width:100%;padding:13px 15px;margin-bottom:14px;border:none;border-radius:10px;font-size:16px;outline:none}
+.card button{width:100%;padding:13px;border:none;border-radius:10px;font-size:17px;font-weight:600;color:#fff;
+background:linear-gradient(135deg,#ff9800,#ff5722);cursor:pointer}
+.card button:active{transform:scale(.97)}
+.err{color:#ff8a80;margin-bottom:12px;min-height:18px}
+.icon{font-size:54px}
+
+/* dashboard */
+.top{width:100%;max-width:420px;display:flex;justify-content:space-between;align-items:center}
+.top button{color:#fff;border:none;background:rgba(255,255,255,.15);padding:7px 14px;border-radius:20px;font-size:14px;cursor:pointer}
+.clock{text-align:right;font-size:13px;opacity:.9}
+.clock b{font-size:20px;display:block}
+.panel{margin-top:18px;width:100%;max-width:420px;background:rgba(255,255,255,.1);border-radius:24px;
+padding:26px;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,.4)}
+h1{margin:0 0 6px;font-size:24px}
+.badge{display:inline-block;font-size:12px;padding:3px 12px;border-radius:12px;background:#78909c;margin-bottom:6px}
+.badge.up{background:#2e7d32}.badge.down{background:#c62828}
+.state{font-size:18px;margin:8px 0 14px;font-weight:600}
+.img{height:190px;display:flex;align-items:center;justify-content:center}
+.img svg{height:180px;width:auto}
+#fireImg{display:none;animation:flick 1s infinite alternate}
+@keyframes flick{from{transform:scale(1) rotate(-1deg);filter:drop-shadow(0 0 18px #ffb300)}
+to{transform:scale(1.06) rotate(1deg);filter:drop-shadow(0 0 34px #ff6d00)}}
+body.on #fireImg{display:block}
+body.on #bulbImg{display:none}
+.sw{position:relative;display:inline-block;width:92px;height:48px;margin-top:10px}
+.sw input{display:none}
+.sl{position:absolute;inset:0;background:#6b7a86;border-radius:48px;cursor:pointer;transition:.3s}
+.sl:before{content:"";position:absolute;width:38px;height:38px;left:5px;top:5px;background:#fff;
+border-radius:50%;transition:.3s;box-shadow:0 2px 6px rgba(0,0,0,.4)}
+input:checked+.sl{background:#ff9800}
+input:checked+.sl:before{transform:translateX(44px)}
+.row{display:flex;gap:14px;justify-content:center;margin-top:22px}
+.sq{width:110px;height:110px;border:none;border-radius:16px;color:#fff;font-size:17px;font-weight:700;
+background:linear-gradient(135deg,#00bcd4,#2196f3);cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.4)}
+.sq small{display:block;font-weight:400;font-size:12px;margin-top:4px;opacity:.9}
+.sq:active{transform:scale(.95)}
+.sq.autoon{background:linear-gradient(135deg,#4caf50,#2e7d32)}
+.sq .ic{font-size:30px;display:block}
+#msg{margin-top:10px;font-size:13px;color:#a5d6a7;min-height:16px}
+
+/* modal */
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);align-items:flex-start;justify-content:center;
+overflow:auto;padding:16px;z-index:9}
+.mbox{background:#1d2b36;border-radius:20px;padding:20px;width:100%;max-width:440px;margin:auto}
+.mbox h2{margin:0 0 6px}
+.slot{background:rgba(255,255,255,.07);border-radius:14px;padding:14px;margin-top:12px}
+.slot h3{margin:0 0 8px;font-size:16px;display:flex;justify-content:space-between;align-items:center}
+.f{display:flex;gap:10px;margin-top:8px;flex-wrap:wrap}
+.f label{font-size:12px;opacity:.85;display:block;margin-bottom:3px}
+.f input[type=time],.f input[type=date]{padding:8px;border-radius:8px;border:none;font-size:15px;width:100%}
+.f>div{flex:1;min-width:130px}
+.days{display:flex;gap:5px;margin-top:10px;flex-wrap:wrap}
+.days label{flex:1;min-width:42px;text-align:center;background:rgba(255,255,255,.12);padding:7px 0;
+border-radius:8px;font-size:13px;cursor:pointer}
+.days input{display:none}
+.days label.sel{background:rgba(255,152,0,.25);outline:1px solid #ff9800;color:#ff9800;font-weight:700}
+.mini{position:relative;width:46px;height:26px;display:inline-block}
+.mini input{display:none}
+.mini span{position:absolute;inset:0;background:#6b7a86;border-radius:26px;transition:.3s}
+.mini span:before{content:"";position:absolute;width:20px;height:20px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.3s}
+.mini input:checked+span{background:#4caf50}
+.mini input:checked+span:before{transform:translateX(20px)}
+.btns{display:flex;gap:10px;margin-top:16px}
+.btns button{flex:1;padding:12px;border:none;border-radius:10px;font-size:16px;font-weight:600;color:#fff;cursor:pointer}
+.save{background:#4caf50}.close{background:#78909c}
+.note{font-size:12px;opacity:.7;margin-top:8px}
+</style></head><body>
+
+<!-- LOGIN -->
+<div id="loginView" class="hide">
+  <form class="card" id="loginForm">
+    <div class="icon">&#128161;</div>
+    <h2>Smart Light Login</h2>
+    <div class="err" id="err"></div>
+    <input id="user" placeholder="Username" autocomplete="username" required>
+    <input id="pass" type="password" placeholder="Password" autocomplete="current-password" required>
+    <button type="submit">LOGIN</button>
+  </form>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashView" class="hide" style="width:100%;display:flex;flex-direction:column;align-items:center">
+  <div class="top">
+    <button id="logoutBtn">&#8592; Logout</button>
+    <div class="clock"><b id="clk">--:--:--</b><span id="dt"></span></div>
+  </div>
+
+  <div class="panel">
+    <h1>Smart Light</h1>
+    <span class="badge" id="badge">Checking...</span>
+    <div class="state" id="stateTxt">LIGHT OFF</div>
+
+    <div class="img">
+      <svg id="bulbImg" viewBox="0 0 100 140">
+        <path d="M50 8C28 8 12 25 12 47c0 14 7 24 15 33 5 6 7 11 7 18h32c0-7 2-12 7-18 8-9 15-19 15-33C88 25 72 8 50 8z"
+          fill="#cfd8dc" stroke="#90a4ae" stroke-width="3"/>
+        <path d="M40 60l10 14 10-14M50 74v24" fill="none" stroke="#90a4ae" stroke-width="3" stroke-linecap="round"/>
+        <rect x="34" y="100" width="32" height="9" rx="3" fill="#78909c"/>
+        <rect x="36" y="111" width="28" height="9" rx="3" fill="#607d8b"/>
+        <rect x="42" y="122" width="16" height="9" rx="4" fill="#455a64"/>
+      </svg>
+      <svg id="fireImg" viewBox="0 0 100 140">
+        <defs>
+          <radialGradient id="g1" cx="50%" cy="70%" r="60%">
+            <stop offset="0" stop-color="#fff59d"/><stop offset=".5" stop-color="#ffb300"/><stop offset="1" stop-color="#e64a19"/>
+          </radialGradient>
+        </defs>
+        <path d="M50 4C56 28 82 40 80 74c-1 26-16 44-30 44S21 100 20 74c-1-16 8-26 16-36 2 12 8 16 12 16-4-20-2-34 2-50z" fill="url(#g1)"/>
+        <path d="M50 52c4 14 18 22 17 40-1 14-8 22-17 22s-16-8-17-22c-1-10 6-16 10-22 1 7 4 9 7 9-2-12-1-20 0-27z" fill="#fff8e1" opacity=".9"/>
+        <rect x="34" y="118" width="32" height="8" rx="3" fill="#78909c"/>
+        <rect x="40" y="128" width="20" height="8" rx="4" fill="#455a64"/>
+      </svg>
+    </div>
+
+    <label class="sw"><input type="checkbox" id="tg"><span class="sl"></span></label>
+
+    <div class="row">
+      <button class="sq" id="autoBtn"><span class="ic">&#9200;</span>AUTO<small id="autoSm">Set timer</small></button>
+    </div>
+    <div id="msg"></div>
+  </div>
+</div>
+
+<!-- AUTO MODAL -->
+<div class="modal" id="modal"><div class="mbox">
+  <h2>&#9200; Automatic Timer</h2>
+  <div style="display:flex;justify-content:space-between;align-items:center">
+    <span>Auto mode</span>
+    <label class="mini"><input type="checkbox" id="autoMaster"><span></span></label>
+  </div>
+  <div id="slots"></div>
+  <div class="note">Pick days (Sun-Sat) OR a specific date. If a date is chosen, the day buttons are ignored.
+  Leave the date empty to repeat on the selected days every week. Times are India time (IST).</div>
+  <div class="btns"><button class="save" id="saveBtn">SAVE</button>
+  <button class="close" id="closeBtn">CLOSE</button></div>
+</div></div>
+
+<script>
+var DN=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+function $(i){return document.getElementById(i)}
+var timer=null, clockTimer=null, pendingVal=null, pendingUntil=0;
+
+function show(view){
+  $('loginView').classList.toggle('hide',view!=='login');
+  $('dashView').classList.toggle('hide',view!=='dash');
+  if(view!=='dash')document.body.className='';
+}
+
+/* ---------- login ---------- */
+$('loginForm').addEventListener('submit',function(e){
+  e.preventDefault();
+  $('err').innerText='';
+  fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({user:$('user').value.trim(),pass:$('pass').value})})
+  .then(function(r){return r.json().then(function(j){return{ok:r.ok,j:j}})})
+  .then(function(x){
+    if(x.ok){$('pass').value='';start();}
+    else $('err').innerText=x.j&&x.j.error?x.j.error:'Wrong username or password';
+  }).catch(function(){$('err').innerText='Network error'});
+});
+$('logoutBtn').addEventListener('click',function(){
+  fetch('/api/logout',{method:'POST'}).then(function(){stop();show('login')});
+});
+
+/* ---------- dashboard ---------- */
+function setUI(on){
+  document.body.className=on?'on':'';
+  $('stateTxt').innerText=on?'LIGHT ON':'LIGHT OFF';
+}
+function refresh(){
+  fetch('/api/status',{cache:'no-store'}).then(function(r){
+    if(r.status===401){stop();show('login');return null}
+    return r.json();
+  }).then(function(j){
+    if(!j||j.error)return;
+    var pending=pendingVal!==null&&Date.now()<pendingUntil&&j.on!==pendingVal;
+    if(!pending){pendingVal=null;}
+    setUI(j.on);
+    $('tg').checked=pending?pendingVal:j.on;
+    $('msg').innerText=pending?'Sending command to the board...':'';
+    var b=$('badge');
+    b.innerText=j.online?'Board online':'Board offline';
+    b.className='badge '+(j.online?'up':'down');
+    $('autoBtn').className='sq'+(j.auto?' autoon':'');
+    $('autoSm').innerText=j.auto?'Auto ON':'Auto OFF';
+  }).catch(function(){});
+}
+$('tg').addEventListener('change',function(){
+  var v=$('tg').checked?1:0;
+  pendingVal=!!v;pendingUntil=Date.now()+10000;
+  $('msg').innerText='Sending command to the board...';
+  fetch('/api/toggle',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({state:v})})
+  .then(function(r){if(r.status===401){stop();show('login')}});
+});
+function tickClock(){
+  var d=new Date();
+  $('clk').innerText=d.toLocaleTimeString('en-US',{timeZone:'Asia/Kolkata',hour12:true});
+  $('dt').innerText=d.toLocaleDateString('en-GB',{timeZone:'Asia/Kolkata',weekday:'short',year:'numeric',month:'short',day:'numeric'});
+}
+function start(){
+  show('dash');tickClock();refresh();
+  clearInterval(timer);clearInterval(clockTimer);
+  timer=setInterval(refresh,2000);clockTimer=setInterval(tickClock,1000);
+}
+function stop(){clearInterval(timer);clearInterval(clockTimer);}
+
+/* ---------- AUTO modal ---------- */
+$('autoBtn').addEventListener('click',function(){
+  fetch('/api/auto',{cache:'no-store'}).then(function(r){
+    if(r.status===401){stop();show('login');return null}
+    return r.json();
+  }).then(function(j){
+    if(!j)return;
+    $('autoMaster').checked=!!j.auto;
+    var h='';
+    for(var i=0;i<3;i++){
+      var s=j.slots[i];
+      h+='<div class="slot"><h3>Schedule '+(i+1)+
+        '<label class="mini"><input type="checkbox" id="e'+i+'" '+(s.e?'checked':'')+'><span></span></label></h3>'+
+        '<div class="f"><div><label>Light ON time</label><input type="time" id="on'+i+'" value="'+s.on+'"></div>'+
+        '<div><label>Light OFF time</label><input type="time" id="off'+i+'" value="'+s.off+'"></div></div>'+
+        '<div class="f"><div><label>Specific date (optional)</label><input type="date" id="dt'+i+'" value="'+(s.date||'')+'"></div></div>'+
+        '<div class="days">';
+      for(var d=0;d<7;d++){
+        var on=(s.d>>d)&1;
+        h+='<label class="'+(on?'sel':'')+'"><input type="checkbox" id="d'+i+'_'+d+'" '+(on?'checked':'')+'>'+DN[d]+'</label>';
+      }
+      h+='</div></div>';
+    }
+    $('slots').innerHTML=h;
+    var boxes=$('slots').querySelectorAll('.days input');
+    for(var k=0;k<boxes.length;k++){
+      boxes[k].addEventListener('change',function(){this.parentNode.className=this.checked?'sel':''});
+    }
+    $('modal').style.display='flex';
+  });
+});
+$('closeBtn').addEventListener('click',function(){$('modal').style.display='none'});
+$('saveBtn').addEventListener('click',function(){
+  var slots=[];
+  for(var i=0;i<3;i++){
+    var m=0;
+    for(var d=0;d<7;d++){if($('d'+i+'_'+d).checked)m|=(1<<d)}
+    slots.push({e:$('e'+i).checked?1:0,on:$('on'+i).value||'00:00',off:$('off'+i).value||'00:00',d:m,date:$('dt'+i).value||''});
+  }
+  fetch('/api/auto',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({auto:$('autoMaster').checked?1:0,slots:slots})})
+  .then(function(r){return r.json().then(function(j){return{ok:r.ok,j:j}})})
+  .then(function(x){
+    $('modal').style.display='none';
+    $('msg').innerText=x.ok?'Auto schedule saved (board updates within a few seconds)':'Could not save: '+(x.j.error||'error');
+    setTimeout(function(){$('msg').innerText=''},4000);refresh();
+  });
+});
+
+/* ---------- first load: am I already logged in? ---------- */
+fetch('/api/status',{cache:'no-store'}).then(function(r){
+  if(r.status===401)show('login');else start();
+}).catch(function(){show('login')});
+</script></body></html>
